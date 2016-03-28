@@ -1,0 +1,56 @@
+---
+title: "week4_project_final"
+output: html_document
+---
+```{r}
+library(caret)
+library(rpart)
+library(ggplot2)
+```
+Load data with option to make elements in c() into NA's. Now get dimensions of your training set to threshold dataframe columns. We'll essentially drop columns that have more than 90% of rows as NA's.
+```{r}
+
+training= read.csv('pml-training.csv', na.strings= c('#DIV/0','','NA'), stringsAsFactors= F)
+
+testing= read.csv('pml-testing.csv', na.strings= c('#DIV/0','','NA'), stringsAsFactors= F)
+
+shape= dim(training)#Get rows and columns
+rows= shape[1]#Get rows
+dropThresh= 0.9*rows
+cleanTraining= training[,colSums(is.na(training)) <dropThresh]
+```
+Now do the same for the testing set
+```{r}
+shape= dim(testing)#Get rows and columns
+rows= shape[1]#Get rows
+dropThresh= 0.9*rows
+cleanTesting= testing[,colSums(is.na(testing)) <dropThresh]
+```
+
+Now we'll do cross-validation partition to split training into cvTraining and cvTest sets
+```{r}
+part= createDataPartition(cleanTraining$classe, p= 0.7, list= FALSE)
+cvTrain= cleanTraining[part,]
+cvTest= cleanTraining[-part,]
+```
+Now we'll use a PCA object to reduce features even more, keeping only those that account for 90% of variance; recall that our response variable is on column 60. We'll then apply pca object to cvTrain and cvTest sets
+```{r}
+pcaObj= preProcess(cvTrain[,-60], method= 'pca', thresh= 0.9)
+cvTrainPca= predict(pcaObj, cvTrain[,-60])
+cvTestPca= predict(pcaObj, cvTest[,-60])
+```
+We'll build a model using cvTrainPca set and known responses (column 60) with a cart model
+
+```{r}
+model= train(cvTrainPca,cvTrain[,60], method= 'rpart')
+```
+
+Now make predictions using cart model and features from cvTestPca
+```{r}
+cvPred= predict(model,cvTestPca[,-60])
+```
+
+Finally, calculate accuracy of predictions compared to cvTest responses
+```{r}
+confusionMatrix(cvPred, cvTest$classe)
+```
