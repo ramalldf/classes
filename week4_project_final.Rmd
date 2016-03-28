@@ -47,10 +47,17 @@ model= train(cvTrainPca,cvTrain[,60], method= 'rpart')
 
 Now make predictions using cart model and features from cvTestPca
 ```{r}
-cvPred= predict(model,cvTestPca[,-60])
+cvPred= predict(model,cvTestPca[,-26])
 ```
 
 Finally, calculate accuracy of predictions compared to cvTest responses
 ```{r}
 confusionMatrix(cvPred, cvTest$classe)
 ```
+Now apply the PCA/preprocess to our real 20 set testing set and apply model to make predictions 
+```{r}
+realTestPca= predict(pcaObj, cleanTesting[,-60])
+finalPred= predict(model,realTestPca[,-60])
+finalPred
+```
+
